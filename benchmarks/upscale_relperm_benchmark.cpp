@@ -113,11 +113,11 @@
 //   - Small: MODEL_TYPE 1  (35751 active cells, ~5 MB)
 //   - Medium: MODEL_TYPE 2  (175045 active cells, ~23 MB)
 //   - Large: MODEL_TYPE 3  (711539 active cells, ~93 MB)
-#define MODEL_TYPE 1
+#define MODEL_TYPE 0
 
 // Benchmark input data (this file can be generated from script 'createInputDataFiles.sh')
 #if MODEL_TYPE == 0
-#include "input/benchmark_tiny_input_data.cpp"
+#include "input/benchmark_tiny_input_data_embed.cpp"
 char model_name[] = "Debug";
 #elif MODEL_TYPE == 1
 #include "input/benchmark20_input_data.cpp"
