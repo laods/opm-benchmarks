@@ -556,19 +556,27 @@ int main(int varnum, char** vararg)
 
     double nextStoneValue;
     string nextStoneLine;
-    while (!stonestream.eof()) {
+    std::cout.rdbuf(cout_sbuf); // restore the original stream buffer
+    while (getline(stonestream, nextStoneLine)) {
 	stringstream line(stringstream::in | stringstream::out);
-	getline(stonestream, nextStoneLine);
+	cout << "nextStoneLine: " << nextStoneLine << " " << nextStoneLine[0] << endl;
+	if (nextStoneLine[0] == '#') continue;
 	line << nextStoneLine;
 	int colNr = 1;
-	while (!line.eof()) {
-	    line >> nextStoneValue;
+	while (line >> nextStoneValue) {
+	    cout << "  nextStoneValue = " << nextStoneValue << endl;
 	    if (colNr == 1) inputWaterSaturation.push_back(nextStoneValue);
 	    else if (colNr == relPermCurve) inputRelPerm.push_back(nextStoneValue);
 	    else if (colNr == jFunctionCurve) inputJfunction.push_back(nextStoneValue);
 	    colNr++;
 	}
     }
+
+    dispVec("inputWaterSaturation", inputWaterSaturation);
+    dispVec("inputRelPerm", inputRelPerm);
+    dispVec("inputJfunction", inputJfunction);
+
+    std::cout.rdbuf(ss_null.rdbuf()); // redirect 'cout' to ss_null
 
     MonotCubicInterpolator Jtmp(inputWaterSaturation, inputJfunction);
     for (int i=0; i < stone_types; ++i) {
