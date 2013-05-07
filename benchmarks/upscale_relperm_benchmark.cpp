@@ -113,11 +113,14 @@
 //   - Small: MODEL_TYPE 1  (35751 active cells, ~5 MB)
 //   - Medium: MODEL_TYPE 2  (175045 active cells, ~23 MB)
 //   - Large: MODEL_TYPE 3  (711539 active cells, ~93 MB)
-#define MODEL_TYPE 1
+#define MODEL_TYPE 0
 
 // Benchmark input data (this file can be generated from script 'createInputDataFiles.sh')
 #if MODEL_TYPE == 0
-#include "input/benchmark_tiny_input_data.cpp"
+// #include "input/benchmark_tiny_input_data.cpp"
+static char* ECLIPSEFILENAME = "benchmark_tiny.grdecl";
+static char* ROCKFILENAME = "stonefile_benchmark.txt";
+static char* REFERENCEFILENAME = "benchmark_tiny_upscaled_relperm_20points.txt";
 char model_name[] = "Debug";
 #elif MODEL_TYPE == 1
 #include "input/benchmark20_input_data.cpp"
@@ -354,9 +357,13 @@ int main(int varnum, char** vararg)
     // Opm::EclipseGridParser eclParser(ECLIPSEFILENAME, false);
 
     // Benchmark version:
+    char eclipseInput[] = {
+	#include "input/benchmark_tiny_model.dat"
+	0x00
+    };
     Opm::EclipseGridParser eclParser;
     stringstream gridstream(stringstream::in | stringstream::out);
-    gridstream << eclipseInput;
+    gridstream << string(eclipseInput);
     eclParser.read(gridstream, false);
 
     finish = clock();   timeused = (double(finish)-double(start))/CLOCKS_PER_SEC;
@@ -548,21 +555,25 @@ int main(int varnum, char** vararg)
 
 
     // Benchmark version: (assumes only one phase to be upscaled, and only one stone type)
+    char stone_string[] = {
+	#include "input/stonefile_benchmark.dat"
+	0x00
+    };
+
     stringstream stonestream(stringstream::in | stringstream::out);
-    stonestream << stone_string;
+    stonestream << string(stone_string);
     vector<double> inputWaterSaturation;
     vector<double> inputRelPerm;
     vector<double> inputJfunction;
 
     double nextStoneValue;
     string nextStoneLine;
-    while (!stonestream.eof()) {
+    while (getline(stonestream, nextStoneLine)) {
 	stringstream line(stringstream::in | stringstream::out);
-	getline(stonestream, nextStoneLine);
+	if (nextStoneLine[0] == '#') continue;
 	line << nextStoneLine;
 	int colNr = 1;
-	while (!line.eof()) {
-	    line >> nextStoneValue;
+	while (line >> nextStoneValue) {
 	    if (colNr == 1) inputWaterSaturation.push_back(nextStoneValue);
 	    else if (colNr == relPermCurve) inputRelPerm.push_back(nextStoneValue);
 	    else if (colNr == jFunctionCurve) inputJfunction.push_back(nextStoneValue);
@@ -1631,19 +1642,28 @@ int main(int varnum, char** vararg)
 	RelPermValuesReference.push_back(tempVec);
 
 	// Get upscaled data from string variable in benchmark_input_data.cpp.
+	char result_string[] = {
+	    #include "input/benchmark_tiny_result.dat"
+	    0x00
+	};
 	stringstream referencestream(stringstream::in | stringstream::out);
-	referencestream << result_string;
+	referencestream << string(result_string);
+	string nextReferenceLine;
 	double next_reference_nr;
-	for (int i=0; i < points; ++i) {
-	    referencestream >> next_reference_nr;
+
+	while (getline(referencestream, nextReferenceLine)) {
+	    stringstream line(stringstream::in | stringstream::out);
+	    if (nextReferenceLine[0] == '#') continue;
+	    line << nextReferenceLine;
+	    line >> next_reference_nr;
 	    PvaluesReference.push_back(next_reference_nr);
-	    referencestream >> next_reference_nr;
+	    line >> next_reference_nr;
 	    WaterSaturationReference.push_back(next_reference_nr);
-	    referencestream >> next_reference_nr;
+	    line >> next_reference_nr;
 	    RelPermValuesReference[0].push_back(next_reference_nr);
-	    referencestream >> next_reference_nr;
+	    line >> next_reference_nr;
 	    RelPermValuesReference[1].push_back(next_reference_nr);
-	    referencestream >> next_reference_nr;
+	    line >> next_reference_nr;
 	    RelPermValuesReference[2].push_back(next_reference_nr);
 	}
 
